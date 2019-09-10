@@ -6,7 +6,7 @@ from imlib.dtype import *
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.misc
-
+from PIL import Image
 
 def imread(paths, mode='RGB'):
     """Read image(s).
@@ -44,7 +44,10 @@ def imwrite(image, path):
     if image.ndim == 3 and image.shape[2] == 1:  # for gray image
         image = np.array(image, copy=True)
         image.shape = image.shape[0:2]
-    return scipy.misc.imsave(path, to_range(image, 0, 255, np.uint8))
+    # return scipy.misc.imsave(path, to_range(image, 0, 255, np.uint8))
+    # return np.save(path, to_range(image, 0, 255, np.uint8))
+    img = Image.fromarray(to_range(image, 0, 255, np.uint8))
+    img.save(path)
 
 
 def imshow(image):

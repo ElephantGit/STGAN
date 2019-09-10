@@ -27,7 +27,7 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument('--experiment_name', help='experiment_name')
 parser.add_argument('--gpu', type=str, default='all', help='gpu')
-parser.add_argument('--dataroot', type=str, default='/data/Datasets/CelebA/Img')
+parser.add_argument('--dataroot', type=str, default='./data/celeba/')
 # if assigned, only given images will be tested.
 parser.add_argument('--img', type=int, nargs='+', default=None, help='e.g., --img 182638 202599')
 # for multiple attributes
@@ -134,14 +134,16 @@ else:
 # initialization
 ckpt_dir = './output/%s/checkpoints' % experiment_name
 tl.load_checkpoint(ckpt_dir, sess)
-
+print('test_atts:', test_atts)
 # test
 try:
     multi_atts = test_atts is not None
     for idx, batch in enumerate(te_data):
         xa_sample_ipt = batch[0]
         a_sample_ipt = batch[1]
+        # print('a_sample_ipt:', a_sample_ipt)
         b_sample_ipt_list = [a_sample_ipt.copy() for _ in range(n_slide if test_slide else 1)]
+        # print('b_sample_ipt_list:', b_sample_ipt_list)
         if test_slide: # test_slide
             for i in range(n_slide):
                 test_int = (test_int_max - test_int_min) / (n_slide - 1) * i + test_int_min
@@ -153,12 +155,19 @@ try:
                 b_sample_ipt_list[-1][:, i] = 1 - b_sample_ipt_list[-1][:, i]
                 b_sample_ipt_list[-1] = data.Celeba.check_attribute_conflict(b_sample_ipt_list[-1], atts[i], atts)
         else: # test_single_attributes
+            # print('length of atts:', len(atts))
+            print(atts)
+            # print('a_sample_ipt:', a_sample_ipt)
             for i in range(len(atts)):
                 tmp = np.array(a_sample_ipt, copy=True)
+                # print('1:', tmp)
                 tmp[:, i] = 1 - tmp[:, i]   # inverse attribute
+                # print('2:', tmp)
                 tmp = data.Celeba.check_attribute_conflict(tmp, atts[i], atts)
+                # print('3:', tmp)
                 b_sample_ipt_list.append(tmp)
-
+        # print('length of b_sample_ipt_list: ', len(b_sample_ipt_list))
+        # print('b_sample_ipt_list:', b_sample_ipt_list)
         x_sample_opt_list = [xa_sample_ipt, np.full((1, img_size, img_size // 10, 3), -1.0)]
         raw_a_sample_ipt = a_sample_ipt.copy()
         raw_a_sample_ipt = (raw_a_sample_ipt * 2 - 1) * thres_int
@@ -180,6 +189,7 @@ try:
         else:              save_folder = 'sample_testing'
         save_dir = './output/%s/%s' % (experiment_name, save_folder)
         pylib.mkdir(save_dir)
+
         im.imwrite(sample.squeeze(0), '%s/%06d%s.png' % (save_dir,
                                                          idx + 182638 if img is None else img[idx], 
                                                          '_%s'%(str(test_atts)) if multi_atts else ''))
