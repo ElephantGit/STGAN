@@ -18,7 +18,9 @@ import data
 import models
 
 import os
+import time
 
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 # ==============================================================================
 # =                                    param                                   =
@@ -172,16 +174,24 @@ try:
         raw_a_sample_ipt = a_sample_ipt.copy()
         raw_a_sample_ipt = (raw_a_sample_ipt * 2 - 1) * thres_int
         for i, b_sample_ipt in enumerate(b_sample_ipt_list):
+            print(b_sample_ipt)
             _b_sample_ipt = (b_sample_ipt * 2 - 1) * thres_int
             if not test_slide:
                 if multi_atts: # i must be 0
                     for t_att, t_int in zip(test_atts, test_ints):
-                        _b_sample_ipt[..., atts.index(t_att)] = _b_sample_ipt[..., atts.index(t_att)] * t_int
+                        _b_sample_ipt[..., atts.index(t_att)] = _b_sample_ipt[..., atts.index(t_att)] * float(t_int)
                 if i > 0:   # i == 0 is for reconstruction
                     _b_sample_ipt[..., i - 1] = _b_sample_ipt[..., i - 1] * test_int
+            print(_b_sample_ipt)
+            start_time = time.time()
             x_sample_opt_list.append(sess.run(x_sample, feed_dict={xa_sample: xa_sample_ipt,
                                                                    _b_sample: _b_sample_ipt,
                                                                    raw_b_sample: raw_a_sample_ipt}))
+            duration = time.time() - start_time
+            # print('duration of process No.{} attribution({}) of image {}.png is: {}'.format(i,
+            #                                                                                 'no-change' if i == 0 else atts[i - 1],
+            #                                                                                 idx + 182638 if img is None else img[idx],
+            #                                                                                 duration))
         sample = np.concatenate(x_sample_opt_list, 2)
 
         if test_slide:     save_folder = 'sample_testing_slide'
@@ -189,7 +199,7 @@ try:
         else:              save_folder = 'sample_testing'
         save_dir = './output/%s/%s' % (experiment_name, save_folder)
         pylib.mkdir(save_dir)
-
+        im.imshow(sample.squeeze(0))
         im.imwrite(sample.squeeze(0), '%s/%06d%s.png' % (save_dir,
                                                          idx + 182638 if img is None else img[idx], 
                                                          '_%s'%(str(test_atts)) if multi_atts else ''))
