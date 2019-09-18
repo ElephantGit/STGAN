@@ -182,7 +182,7 @@ try:
                         _b_sample_ipt[..., atts.index(t_att)] = _b_sample_ipt[..., atts.index(t_att)] * float(t_int)
                 if i > 0:   # i == 0 is for reconstruction
                     _b_sample_ipt[..., i - 1] = _b_sample_ipt[..., i - 1] * test_int
-            print(_b_sample_ipt)
+            # print(_b_sample_ipt)
             start_time = time.time()
             x_sample_opt_list.append(sess.run(x_sample, feed_dict={xa_sample: xa_sample_ipt,
                                                                    _b_sample: _b_sample_ipt,

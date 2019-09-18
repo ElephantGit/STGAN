@@ -75,7 +75,7 @@ tl.load_checkpoint(ckpt_file, sess)
 
 ''' train '''
 try:
-    img_paths = glob(os.path.join(img_dir, '*.png'))
+    img_paths = glob(os.path.join(img_dir, '*.jpg'))
     img_paths.sort()
 
     cnt = np.zeros([len(att_id)])
@@ -83,9 +83,10 @@ try:
     err_each_cnt = np.zeros([len(att_id), len(att_id)])
     for img_path in img_paths:
         imgs = im.imread(img_path)
-        imgs = np.concatenate([imgs[:, :img_size, :], imgs[:, img_size+img_size//10:, :]], axis=1)
+        print(imgs.shape)
+        # imgs = np.concatenate([imgs[:, :img_size, :], imgs[:, img_size+img_size//10:, :]], axis=1)
         imgs = np.expand_dims(imgs, axis=0)
-        imgs = np.concatenate(np.split(imgs, 15, axis=2))
+        # imgs = np.concatenate(np.split(imgs, 15, axis=2))
         preds_opt = sess.run(pred, feed_dict={x: imgs})
         preds_opt = preds_opt[:, att_id]
 

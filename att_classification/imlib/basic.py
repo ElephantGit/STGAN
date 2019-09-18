@@ -6,6 +6,7 @@ from imlib.dtype import *
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.misc
+from PIL import Image
 
 
 def imread(paths, mode='RGB'):
@@ -30,7 +31,21 @@ def imread(paths, mode='RGB'):
         Float64 image in [-1.0, 1.0].
     """
     def _imread(path, mode='RGB'):
-        return scipy.misc.imread(path, mode=mode) / 127.5 - 1
+        # return scipy.misc.imread(path, mode=mode) / 127.5 - 1
+        im = Image.open(path)
+        im = im.resize((128, 128))
+        width = im.size[0]
+        height = im.size[1]
+        im = im.convert('RGB')
+        # print(width, height)
+        arr = np.ndarray([height, width, 3])
+        # print(arr.shape)
+        for x in range(width):
+            for y in range(height):
+                r, g, b = im.getpixel((x, y))
+                r, g, b = r / 127.5 - 1, g / 127.5 - 1, b / 127.5 - 1
+                arr[height - 1, width - 1] = [r, g, b]
+        return arr
 
     if isinstance(paths, (list, tuple)):
         images = [_imread(path, mode) for path in paths]
