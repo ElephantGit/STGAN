@@ -6,7 +6,7 @@ import argparse
 from functools import partial
 import json
 import traceback
-
+from PIL import Image
 
 import imlib as im
 import numpy as np
@@ -108,7 +108,7 @@ experiment_name = args_.experiment_name
 
 # data
 sess = tl.session()
-te_data = data.Celeba(dataroot, atts, img_size, 1, part='test', sess=sess, crop=not use_cropped_img, im_no=img)
+# te_data = data.Celeba(dataroot, atts, img_size, 1, part='test', sess=sess, crop=not use_cropped_img, im_no=img)
 # models
 Genc = partial(models.Genc, dim=enc_dim, n_layers=enc_layers, multi_inputs=multi_inputs)
 Gdec = partial(models.Gdec, dim=dec_dim, n_layers=dec_layers, shortcut_layers=shortcut_layers,
@@ -130,20 +130,6 @@ else:
     x_sample = Gdec(Genc(xa_sample, is_training=False), test_label, is_training=False)
 
 # ==============================================================================
-# =                            test command arguments                          =
-# ==============================================================================
-
-# testing single attribute
-# --experiment_name 128 --test_int 1.0 --img 182659
-
-# testing multiple attributes
-# --experiment_name 128 --test_atts Pale_Skin Male --test_ints 1.0 1.0 --img 182659
-
-# attribute intensity control
-# --experiment_name 128 --test_slide --test_att Bald --test_int_min 0.6 --test_int_max 1.0 --n_slide 10 --img 182659
-
-
-# ==============================================================================
 # =                                    test                                    =
 # ==============================================================================
 
@@ -152,73 +138,78 @@ ckpt_dir = './output/%s/checkpoints' % experiment_name
 tl.load_checkpoint(ckpt_dir, sess)
 print('test_atts:', test_atts)
 # test
+img_name = './data/red/2478.jpg'
+# 'Bald', 'Bangs', 'Black_Hair', 'Blond_Hair', 'Brown_Hair', 'Bushy_Eyebrows', 'Eyeglasses', 'Male', 'Mouth_Slightly_Open', 'Mustache', 'No_Beard', 'Pale_Skin', 'Young'
+label = np.array([[0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1,]])
 try:
     multi_atts = test_atts is not None
-    for idx, batch in enumerate(te_data):
-        xa_sample_ipt = batch[0]
-        a_sample_ipt = batch[1]
+    idx = 0
+    img = Image.open(img_name)
+    img = np.array(img.resize((img_size, img_size))) / 127.5 - 1
+    img = np.expand_dims(img, 0)
+    batch = (img, label)
+    xa_sample_ipt = batch[0]
+    a_sample_ipt = batch[1]
+    # print('a_sample_ipt:', a_sample_ipt)
+    b_sample_ipt_list = [a_sample_ipt.copy() for _ in range(n_slide if test_slide else 1)]
+    # print('b_sample_ipt_list:', b_sample_ipt_list)
+    if test_slide: # test_slide
+        for i in range(n_slide):
+            test_int = (test_int_max - test_int_min) / (n_slide - 1) * i + test_int_min
+            b_sample_ipt_list[i] = (b_sample_ipt_list[i]*2-1) * thres_int
+            b_sample_ipt_list[i][..., atts.index(test_att)] = test_int
+    elif multi_atts: # test_multiple_attributes
+        for a in test_atts:
+            i = atts.index(a)
+            b_sample_ipt_list[-1][:, i] = 1 - b_sample_ipt_list[-1][:, i]
+            b_sample_ipt_list[-1] = data.Celeba.check_attribute_conflict(b_sample_ipt_list[-1], atts[i], atts)
+    else: # test_single_attributes
+        # print('length of atts:', len(atts))
+        print(atts)
         # print('a_sample_ipt:', a_sample_ipt)
-        b_sample_ipt_list = [a_sample_ipt.copy() for _ in range(n_slide if test_slide else 1)]
-        # print('b_sample_ipt_list:', b_sample_ipt_list)
-        if test_slide: # test_slide
-            for i in range(n_slide):
-                test_int = (test_int_max - test_int_min) / (n_slide - 1) * i + test_int_min
-                b_sample_ipt_list[i] = (b_sample_ipt_list[i]*2-1) * thres_int
-                b_sample_ipt_list[i][..., atts.index(test_att)] = test_int
-        elif multi_atts: # test_multiple_attributes
-            for a in test_atts:
-                i = atts.index(a)
-                b_sample_ipt_list[-1][:, i] = 1 - b_sample_ipt_list[-1][:, i]
-                b_sample_ipt_list[-1] = data.Celeba.check_attribute_conflict(b_sample_ipt_list[-1], atts[i], atts)
-        else: # test_single_attributes
-            # print('length of atts:', len(atts))
-            print(atts)
-            # print('a_sample_ipt:', a_sample_ipt)
-            for i in range(len(atts)):
-                tmp = np.array(a_sample_ipt, copy=True)
-                # print('1:', tmp)
-                tmp[:, i] = 1 - tmp[:, i]   # inverse attribute
-                # print('2:', tmp)
-                tmp = data.Celeba.check_attribute_conflict(tmp, atts[i], atts)
-                # print('3:', tmp)
-                b_sample_ipt_list.append(tmp)
-        # print('length of b_sample_ipt_list: ', len(b_sample_ipt_list))
-        # print('b_sample_ipt_list:', b_sample_ipt_list)
-        x_sample_opt_list = [xa_sample_ipt, np.full((1, img_size, img_size // 10, 3), -1.0)]
-        raw_a_sample_ipt = a_sample_ipt.copy()
-        raw_a_sample_ipt = (raw_a_sample_ipt * 2 - 1) * thres_int
-        for i, b_sample_ipt in enumerate(b_sample_ipt_list):
-            print(b_sample_ipt)
-            _b_sample_ipt = (b_sample_ipt * 2 - 1) * thres_int
-            if not test_slide:
-                if multi_atts: # i must be 0
-                    for t_att, t_int in zip(test_atts, test_ints):
-                        _b_sample_ipt[..., atts.index(t_att)] = _b_sample_ipt[..., atts.index(t_att)] * float(t_int)
-                if i > 0:   # i == 0 is for reconstruction
-                    _b_sample_ipt[..., i - 1] = _b_sample_ipt[..., i - 1] * test_int
-            # print(_b_sample_ipt)
-            start_time = time.time()
-            x_sample_opt_list.append(sess.run(x_sample, feed_dict={xa_sample: xa_sample_ipt,
-                                                                   _b_sample: _b_sample_ipt,
-                                                                   raw_b_sample: raw_a_sample_ipt}))
-            duration = time.time() - start_time
-            # print('duration of process No.{} attribution({}) of image {}.png is: {}'.format(i,
-            #                                                                                 'no-change' if i == 0 else atts[i - 1],
-            #                                                                                 idx + 182638 if img is None else img[idx],
-            #                                                                                 duration))
-        sample = np.concatenate(x_sample_opt_list, 2)
+        for i in range(len(atts)):
+            tmp = np.array(a_sample_ipt, copy=True)
+            # print('1:', tmp)
+            tmp[:, i] = 1 - tmp[:, i]   # inverse attribute
+            # print('2:', tmp)
+            tmp = data.Celeba.check_attribute_conflict(tmp, atts[i], atts)
+            # print('3:', tmp)
+            b_sample_ipt_list.append(tmp)
+    # print('length of b_sample_ipt_list: ', len(b_sample_ipt_list))
+    # print('b_sample_ipt_list:', b_sample_ipt_list)
+    x_sample_opt_list = [xa_sample_ipt, np.full((1, img_size, img_size // 10, 3), -1.0)]
+    raw_a_sample_ipt = a_sample_ipt.copy()
+    raw_a_sample_ipt = (raw_a_sample_ipt * 2 - 1) * thres_int
+    for i, b_sample_ipt in enumerate(b_sample_ipt_list):
+        print(b_sample_ipt)
+        _b_sample_ipt = (b_sample_ipt * 2 - 1) * thres_int
+        if not test_slide:
+            if multi_atts: # i must be 0
+                for t_att, t_int in zip(test_atts, test_ints):
+                    _b_sample_ipt[..., atts.index(t_att)] = _b_sample_ipt[..., atts.index(t_att)] * float(t_int)
+            if i > 0:   # i == 0 is for reconstruction
+                _b_sample_ipt[..., i - 1] = _b_sample_ipt[..., i - 1] * test_int
+        # print(_b_sample_ipt)
+        start_time = time.time()
+        x_sample_opt_list.append(sess.run(x_sample, feed_dict={xa_sample: xa_sample_ipt,
+                                                               _b_sample: _b_sample_ipt,
+                                                               raw_b_sample: raw_a_sample_ipt}))
+        duration = time.time() - start_time
+        # print('duration of process No.{} attribution({}) of image {}.png is: {}'.format(i,
+        #                                                                                 'no-change' if i == 0 else atts[i - 1],
+        #                                                                                 idx + 182638 if img is None else img[idx],
+        #                                                                                 duration))
+    sample = np.concatenate(x_sample_opt_list, 2)
 
-        if test_slide:     save_folder = 'sample_testing_slide'
-        elif multi_atts:   save_folder = 'sample_testing_multi'
-        else:              save_folder = 'sample_testing'
-        save_dir = './output/%s/%s' % (experiment_name, save_folder)
-        pylib.mkdir(save_dir)
-        # im.imshow(sample.squeeze(0))
-        im.imwrite(sample.squeeze(0), '%s/%06d%s.png' % (save_dir,
-                                                         idx + 182638 if img is None else img[idx], 
-                                                         '_%s'%(str(test_atts)) if multi_atts else ''))
+    if test_slide:     save_folder = 'sample_testing_slide'
+    elif multi_atts:   save_folder = 'sample_testing_multi'
+    else:              save_folder = 'sample_testing'
+    save_dir = './output/%s/%s' % (experiment_name, save_folder)
+    pylib.mkdir(save_dir)
+    # im.imshow(sample.squeeze(0))
+    im.imwrite(sample.squeeze(0), img_name.split('.')[0] + '1.png')
 
-        print('%06d.png done!' % (idx + 182638 if img is None else img[idx]))
+    print('%s done!' % img_name)
 except:
     traceback.print_exc()
 finally:

@@ -6,12 +6,15 @@ __pycache__/
 
 # checkpoint files
 output/
+<<<<<<< HEAD
 output_train/
+=======
+red_result/
+>>>>>>> 686c121070b563aa39c2e76cbd5187489ad55cb9
 data/
 .idea/
 .ipynb_checkpoints/
 
 .DS_Store
-
 *.pyc
 *.sh

@@ -125,7 +125,7 @@ class Dataset(object):
         return self._batch_op
 
 
-class Celeba(Dataset):
+class Red(Dataset):
 
     att_dict = {'5_o_Clock_Shadow': 0, 'Arched_Eyebrows': 1, 'Attractive': 2,
                 'Bags_Under_Eyes': 3, 'Bald': 4, 'Bangs': 5, 'Big_Lips': 6,
@@ -143,21 +143,22 @@ class Celeba(Dataset):
 
     def __init__(self, data_dir, atts, img_resize, batch_size, prefetch_batch=2, drop_remainder=True,
                  num_threads=16, shuffle=True, buffer_size=4096, repeat=-1, sess=None, part='train', crop=True, im_no=None):
-        super(Celeba, self).__init__()
+        super(Red, self).__init__()
 
-        list_file = os.path.join(data_dir, 'list_attr_celeba.txt')
+        list_file = os.path.join(data_dir, 'list_attr_red.txt')
         if crop:
-            img_dir_jpg = os.path.join(data_dir, 'img_align_celeba')
-            img_dir_png = os.path.join(data_dir, 'img_align_celeba_png')
+            img_dir_jpg = os.path.join(data_dir, 'img_align_red')
+            img_dir_png = os.path.join(data_dir, 'img_align_red_png')
         else:
-            img_dir_jpg = os.path.join(data_dir, 'img_crop_celeba')
-            img_dir_png = os.path.join(data_dir, 'img_crop_celeba_png')
+            img_dir_jpg = os.path.join(data_dir, 'img_crop_red')
+            img_dir_png = os.path.join(data_dir, 'img_crop_red_png')
+
         names = np.loadtxt(list_file, skiprows=2, usecols=[0], dtype=np.str)
         if os.path.exists(img_dir_png):
             img_paths = [os.path.join(img_dir_png, name.replace('jpg', 'png')) for name in names]
         elif os.path.exists(img_dir_jpg):
             img_paths = [os.path.join(img_dir_jpg, name) for name in names]
-        att_id = [Celeba.att_dict[att] + 1 for att in atts]
+        att_id = [Red.att_dict[att] + 1 for att in atts]
         labels = np.loadtxt(list_file, skiprows=2, usecols=att_id, dtype=np.int64)
 
         if img_resize == 64:
@@ -190,14 +191,14 @@ class Celeba(Dataset):
             drop_remainder = False
             shuffle = False
             repeat = 1
-            img_paths = img_paths[182637:]
-            labels = labels[182637:]
+            img_paths = img_paths[2:]
+            labels = labels[2:]
         elif part == 'val':
-            img_paths = img_paths[182000:182637]
-            labels = labels[182000:182637]
+            img_paths = img_paths[1:2]
+            labels = labels[1:2]
         else:
-            img_paths = img_paths[:182000]
-            labels = labels[:182000]
+            img_paths = img_paths[:1]
+            labels = labels[:1]
 
         dataset = disk_image_batch_dataset(img_paths=img_paths,
                                            labels=labels,
@@ -279,7 +280,7 @@ class Celeba(Dataset):
 if __name__ == '__main__':
     import imlib as im
     atts = ['Bald', 'Bangs', 'Black_Hair', 'Blond_Hair', 'Brown_Hair', 'Bushy_Eyebrows', 'Eyeglasses', 'Male', 'Mouth_Slightly_Open', 'Mustache', 'No_Beard', 'Pale_Skin', 'Young']
-    data = Celeba('data/celeba/', atts, 128, 32, part='val')
+    data = Red('data/red/', atts, 128, 1, part='val')
     batch = data.get_next()
     print(len(data))
     print(batch[1][1], batch[1].dtype)
