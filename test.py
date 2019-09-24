@@ -199,7 +199,7 @@ try:
         else:              save_folder = 'sample_testing'
         save_dir = './output/%s/%s' % (experiment_name, save_folder)
         pylib.mkdir(save_dir)
-        im.imshow(sample.squeeze(0))
+        # im.imshow(sample.squeeze(0))
         im.imwrite(sample.squeeze(0), '%s/%06d%s.png' % (save_dir,
                                                          idx + 182638 if img is None else img[idx], 
                                                          '_%s'%(str(test_atts)) if multi_atts else ''))

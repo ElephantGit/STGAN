@@ -152,7 +152,6 @@ class Celeba(Dataset):
         else:
             img_dir_jpg = os.path.join(data_dir, 'img_crop_celeba')
             img_dir_png = os.path.join(data_dir, 'img_crop_celeba_png')
-
         names = np.loadtxt(list_file, skiprows=2, usecols=[0], dtype=np.str)
         if os.path.exists(img_dir_png):
             img_paths = [os.path.join(img_dir_png, name.replace('jpg', 'png')) for name in names]

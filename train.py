@@ -28,7 +28,7 @@ def boolean(s):
 
 parser = argparse.ArgumentParser()
 # settings
-dataroot_default = '/data/Datasets/CelebA/Img'
+dataroot_default = './data/celeba'
 parser.add_argument('--dataroot', type=str, default=dataroot_default)
 parser.add_argument('--gpu', type=str, default='all',
                     help='Specify which gpu to use by `CUDA_VISIBLE_DEVICES=num python train.py **kwargs`\
@@ -298,7 +298,7 @@ saver = tf.train.Saver(max_to_keep=num_ckpt)
 summary_writer = tf.summary.FileWriter('./output/%s/summaries' % experiment_name, sess.graph)
 
 # initialization
-ckpt_dir = './output/%s/checkpoints' % experiment_name
+ckpt_dir = './output_train/%s/checkpoints' % experiment_name
 pylib.mkdir(ckpt_dir)
 
 try:
