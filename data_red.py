@@ -150,8 +150,8 @@ class Red(Dataset):
             img_dir_jpg = os.path.join(data_dir, 'img_align_red')
             img_dir_png = os.path.join(data_dir, 'img_align_red_png')
         else:
-            img_dir_jpg = os.path.join(data_dir, 'img_crop_red')
-            img_dir_png = os.path.join(data_dir, 'img_crop_red_png')
+            img_dir_jpg = os.path.join(data_dir, 'img_align_red')
+            img_dir_png = os.path.join(data_dir, 'img_align_red_png')
 
         names = np.loadtxt(list_file, skiprows=2, usecols=[0], dtype=np.str)
         if os.path.exists(img_dir_png):
