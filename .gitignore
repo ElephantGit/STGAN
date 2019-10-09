@@ -6,7 +6,10 @@ __pycache__/
 
 # checkpoint files
 output/
-output_train/
+output_train_1st_att/
+output_train_2nd_att/
+output_train_3rd_att/
+output_train_selected_att/
 red_result/
 data/
 .idea/

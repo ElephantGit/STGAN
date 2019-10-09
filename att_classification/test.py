@@ -82,25 +82,24 @@ try:
     err_cnt = np.zeros([len(att_id)])
     err_each_cnt = np.zeros([len(att_id), len(att_id)])
     for img_path in img_paths:
+        print(os.path.basename(img_path))
         imgs = im.imread(img_path)
-        print(imgs.shape)
         # imgs = np.concatenate([imgs[:, :img_size, :], imgs[:, img_size+img_size//10:, :]], axis=1)
         imgs = np.expand_dims(imgs, axis=0)
         # imgs = np.concatenate(np.split(imgs, 15, axis=2))
         preds_opt = sess.run(pred, feed_dict={x: imgs})
         preds_opt = preds_opt[:, att_id]
-
+        print('preds_opt: {}'.format(preds_opt))
         att_gt = test_data_pool.batch('attr')[:, att_id]
-
-        for i in range(2, len(preds_opt)):
-            cnt[i - 2] += preds_opt[i, i - 2] == 1 - att_gt[0, i - 2]
-            errs = preds_opt[i] != att_gt[0]
-            errs[i - 2] = 0
-            err_each_cnt[i - 2] += errs
-            err_cnt[i - 2] += np.sum(errs)
-
-        print(os.path.basename(img_path))
-
+        print('att_gt:    {}'.format(att_gt))
+        # for i in range(2, len(preds_opt)):
+        #     cnt[i - 2] += preds_opt[i, i - 2] == 1 - att_gt[0, i - 2]
+        #     errs = preds_opt[i] != att_gt[0]
+        #     errs[i - 2] = 0
+        #     err_each_cnt[i - 2] += errs
+        #     err_cnt[i - 2] += np.sum(errs)
+             
+    
     print('Acc.')
     print(cnt / len(img_paths))
     print('Err.')
